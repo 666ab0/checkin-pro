@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CheckIn Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c28;
+    --border: #2a2a3d;
+    --accent: #00e5a0;
+    --accent2: #7c5cfc;
+    --danger: #ff4d6d;
+    --warn: #ffb830;
+    --text: #f0f0f8;
+    --muted: #6b6b8a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ── PANTALLA DE LOGIN ── */
+  #loginScreen {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    background: var(--bg);
+  }
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px 36px;
+    width: 100%; max-width: 400px;
+    text-align: center;
+    box-shadow: 0 0 80px rgba(0,229,160,0.06);
+  }
+  .login-logo {
+    width: 64px; height: 64px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; margin: 0 auto 20px;
+  }
+  .login-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.8rem; font-weight: 800;
+    margin-bottom: 6px;
+  }
+  .login-title span { color: var(--accent); }
+  .login-sub {
+    font-size: 0.82rem; color: var(--muted);
+    margin-bottom: 32px; line-height: 1.6;
+  }
+  .login-input-wrap {
+    position: relative; margin-bottom: 16px;
+  }
+  .login-input-wrap input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 1.1rem;
+    outline: none;
+    letter-spacing: 3px;
+    text-align: center;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .login-input-wrap input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,229,160,0.1);
+  }
+  .login-input-wrap input::placeholder { letter-spacing: 1px; color: var(--muted); }
+  .btn-login {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border: none; border-radius: 12px;
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700; font-size: 1rem;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .btn-login:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-login:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .login-error {
+    margin-top: 14px;
+    padding: 12px 16px;
+    background: rgba(255,77,109,0.1);
+    border: 1px solid rgba(255,77,109,0.3);
+    border-radius: 10px;
+    font-size: 0.82rem; color: var(--danger);
+    display: none;
+  }
+  .login-error.show { display: block; }
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── APP ── */
+  #appScreen { display: none; }
+  #appScreen.show { display: block; }
+
+  .app { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 36px; padding-bottom: 20px; border-bottom: 1px solid var(--border);
+    flex-wrap: wrap; gap: 16px;
+  }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .logo-text { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.4rem; }
+  .logo-text span { color: var(--accent); }
+
+  .user-badge {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 50px; padding: 8px 16px;
+  }
+  .user-avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: #fff; font-family: 'Syne', sans-serif;
+  }
+  .user-info { line-height: 1.3; }
+  .user-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.82rem; }
+  .user-cedula { font-size: 0.72rem; color: var(--muted); }
+  .btn-logout {
+    background: transparent; border: none; color: var(--muted); cursor: pointer;
+    font-size: 1rem; padding: 4px; transition: color 0.2s;
+  }
+  .btn-logout:hover { color: var(--danger); }
+
+  .live-clock { text-align: right; }
+  .live-clock .time {
+    font-size: 1.5rem; font-weight: 500; color: var(--accent);
+    display: block; font-family: 'Syne', sans-serif;
+  }
+  .live-clock .date { font-size: 0.75rem; color: var(--muted); }
+
+  .tabs {
+    display: flex; gap: 4px;
+    background: var(--surface); border-radius: 12px;
+    padding: 4px; margin-bottom: 32px;
+    border: 1px solid var(--border);
+  }
+  .tab-btn {
+    flex: 1; padding: 10px 16px; border: none; background: transparent;
+    color: var(--muted); font-family: 'Syne', sans-serif; font-weight: 600;
+    font-size: 0.85rem; letter-spacing: 0.5px; cursor: pointer; border-radius: 8px;
+    transition: all 0.2s;
+  }
+  .tab-btn.active { background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #fff; }
+  .tab-btn:hover:not(.active) { color: var(--text); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 28px;
+    box-shadow: 0 0 40px rgba(0,229,160,0.05);
+  }
+  .card-title {
+    font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700;
+    margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+  }
+  .card-title::before {
+    content: ''; width: 4px; height: 20px;
+    background: var(--accent); border-radius: 2px;
+  }
+
+  .form-group { margin-bottom: 20px; }
+  label { display: block; font-size: 0.72rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  input[type="text"] {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px; color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+  }
+  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,229,160,0.1); }
+  input::placeholder { color: var(--muted); }
+
+  .check-type { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .check-option {
+    padding: 16px; border: 2px solid var(--border); border-radius: 12px;
+    text-align: center; cursor: pointer; transition: all 0.2s;
+  }
+  .check-option .type-icon { font-size: 1.8rem; margin-bottom: 6px; }
+  .check-option .type-label { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem; }
+  .check-option.entrada.selected { border-color: var(--accent); background: rgba(0,229,160,0.08); }
+  .check-option.salida.selected  { border-color: var(--accent2); background: rgba(124,92,252,0.08); }
+  .check-option:hover { border-color: var(--muted); }
+
+  .location-badge {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 16px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 10px;
+    font-size: 0.8rem; color: var(--muted); margin-bottom: 20px;
+  }
+  .location-badge.ok  { border-color: rgba(0,229,160,0.3); color: var(--accent); }
+  .location-badge.err { border-color: rgba(255,77,109,0.3); color: var(--danger); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .camera-container {
+    background: var(--surface2); border: 1px dashed var(--border);
+    border-radius: 12px; overflow: hidden; aspect-ratio: 4/3;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; margin-bottom: 12px;
+  }
+  #videoStream { width: 100%; height: 100%; object-fit: cover; display: none; transform: scaleX(-1); }
+  #photoCanvas { display: none; }
+  #capturedPhoto { width: 100%; height: 100%; object-fit: cover; display: none; }
+  .camera-placeholder { text-align: center; color: var(--muted); }
+  .camera-placeholder svg { width: 56px; height: 56px; opacity: 0.4; margin-bottom: 12px; }
+  .camera-overlay { position: absolute; inset: 0; pointer-events: none; }
+  .corner { position: absolute; width: 28px; height: 28px; border-color: var(--accent); border-style: solid; opacity: 0.7; }
+  .corner.tl { top: 16px; left: 16px; border-width: 2px 0 0 2px; }
+  .corner.tr { top: 16px; right: 16px; border-width: 2px 2px 0 0; }
+  .corner.bl { bottom: 16px; left: 16px; border-width: 0 0 2px 2px; }
+  .corner.br { bottom: 16px; right: 16px; border-width: 0 2px 2px 0; }
+
+  .camera-actions { display: flex; gap: 10px; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; border: none; border-radius: 10px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; }
+  .btn-primary { background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #fff; width: 100%; padding: 16px; font-size: 1rem; margin-top: 8px; }
+  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); flex: 1; }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-accent { background: var(--accent); color: #0a0a0f; flex: 1; }
+  .btn-accent:hover { opacity: 0.9; }
+
+  .register-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+  @media (max-width: 700px) { .register-grid { grid-template-columns: 1fr; } }
+
+  .success-overlay {
+    display: none; position: absolute; inset: 0;
+    background: rgba(0,229,160,0.12); border-radius: 12px;
+    align-items: center; justify-content: center; font-size: 3rem;
+  }
+  .success-overlay.show { display: flex; }
+
+  /* Saving overlay */
+  .saving-overlay {
+    display: none; position: absolute; inset: 0;
+    background: rgba(10,10,15,0.7); border-radius: 16px;
+    align-items: center; justify-content: center;
+    flex-direction: column; gap: 12px; z-index: 10;
+  }
+  .saving-overlay.show { display: flex; }
+  .saving-text { font-family: 'Syne', sans-serif; font-size: 0.9rem; color: var(--accent); }
+
+  /* Historial */
+  .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  thead tr { background: var(--surface2); }
+  th { padding: 12px 16px; text-align: left; font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.72rem; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 12px 16px; border-bottom: 1px solid rgba(42,42,61,0.6); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-family: 'Syne', sans-serif; font-weight: 700; }
+  .badge-entrada { background: rgba(0,229,160,0.12); color: var(--accent); }
+  .badge-salida  { background: rgba(124,92,252,0.12); color: var(--accent2); }
+  .thumb-cell img { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); cursor: pointer; transition: transform 0.2s; }
+  .thumb-cell img:hover { transform: scale(1.1); }
+
+  /* Reporte */
+  .hours-bar { height: 6px; background: var(--surface2); border-radius: 3px; margin-top: 6px; overflow: hidden; }
+  .hours-fill { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent)); border-radius: 3px; transition: width 0.5s; }
+
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--muted); }
+  .empty-state .emoji { font-size: 3rem; margin-bottom: 12px; }
+  .empty-state p { font-size: 0.85rem; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 32px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 24px;
+    font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.9rem;
+    z-index: 9999; transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    display: flex; align-items: center; gap: 10px; white-space: nowrap;
+    max-width: 90vw;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--accent); color: var(--accent); }
+  .toast.error   { border-color: var(--danger); color: var(--danger); }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal-content {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px; max-width: 480px; width: 90%;
+    transform: scale(0.95); transition: transform 0.2s;
+  }
+  .modal-overlay.open .modal-content { transform: scale(1); }
+  .modal-img { width: 100%; border-radius: 10px; margin-bottom: 16px; }
+  .modal-info { font-size: 0.82rem; color: var(--muted); line-height: 1.8; }
+  .modal-info strong { color: var(--text); }
+  .modal-close { display: block; width: 100%; margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN SCREEN ══════════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">📍</div>
+    <div class="login-title">Check<span>In</span> Pro</div>
+    <div class="login-sub">Sistema de Control de Asistencia<br>Ingresa tu número de cédula para continuar</div>
+    <div class="login-input-wrap">
+      <input type="text" id="loginCedula" placeholder="Número de cédula"
+        maxlength="12" oninput="this.value=this.value.replace(/\D/g,'')"
+        onkeydown="if(event.key==='Enter') doLogin()">
+    </div>
+    <button class="btn-login" id="btnLogin" onclick="doLogin()">
+      <span id="loginBtnText">Ingresar</span>
+    </button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- ══════════ APP SCREEN ══════════ -->
+<div id="appScreen">
+<div class="app">
+
+  <header>
+    <div style="display:flex; align-items:center; gap:24px; flex-wrap:wrap;">
+      <div class="logo">
+        <div class="logo-icon">📍</div>
+        <div class="logo-text">Check<span>In</span> Pro</div>
+      </div>
+      <div class="user-badge">
+        <div class="user-avatar" id="userAvatar"></div>
+        <div class="user-info">
+          <div class="user-name" id="headerNombre"></div>
+          <div class="user-cedula" id="headerCedula"></div>
+        </div>
+        <button class="btn-logout" onclick="logout()" title="Cerrar sesión">✕</button>
+      </div>
+    </div>
+    <div class="live-clock">
+      <span class="time" id="clockTime">--:--:--</span>
+      <span class="date" id="clockDate"></span>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('registro', this)">⏱ Registro</button>
+    <button class="tab-btn" onclick="switchTab('historial', this)">📋 Mi Historial</button>
+    <button class="tab-btn" onclick="switchTab('reporte', this)">📊 Mis Horas</button>
+  </div>
+
+  <!-- ── TAB: REGISTRO ── -->
+  <div class="tab-panel active" id="tab-registro">
+    <div class="register-grid">
+      <div>
+        <div class="card" style="position:relative;">
+          <div class="card-title">Captura de Asistencia</div>
+
+          <div class="check-type">
+            <div class="check-option entrada selected" id="opt-entrada" onclick="selectType('entrada')">
+              <div class="type-icon">🟢</div>
+              <div class="type-label">ENTRADA</div>
+            </div>
+            <div class="check-option salida" id="opt-salida" onclick="selectType('salida')">
+              <div class="type-icon">🔴</div>
+              <div class="type-label">SALIDA</div>
+            </div>
+          </div>
+
+          <div id="locationBadge" class="location-badge">
+            <span class="dot"></span>
+            <span id="locationText">Obteniendo ubicación...</span>
+          </div>
+
+          <div class="camera-container" id="cameraContainer">
+            <video id="videoStream" autoplay playsinline></video>
+            <canvas id="photoCanvas"></canvas>
+            <img id="capturedPhoto" alt="Foto capturada">
+            <div class="camera-overlay">
+              <div class="corner tl"></div><div class="corner tr"></div>
+              <div class="corner bl"></div><div class="corner br"></div>
+            </div>
+            <div class="camera-placeholder" id="cameraPlaceholder">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+              <p>Activa la cámara para tomar la foto</p>
+            </div>
+            <div class="success-overlay" id="successOverlay">✓</div>
+          </div>
+
+          <div class="camera-actions">
+            <button class="btn btn-secondary" onclick="startCamera()" id="btnStartCamera">📷 Activar</button>
+            <button class="btn btn-accent" onclick="takePhoto()" id="btnSnap" disabled>📸 Capturar</button>
+            <button class="btn btn-secondary" onclick="retakePhoto()" id="btnRetake" style="display:none">🔄 Nueva</button>
+          </div>
+
+          <!-- Saving overlay -->
+          <div class="saving-overlay" id="savingOverlay">
+            <div class="spinner" style="width:32px;height:32px;border-width:3px;border-color:rgba(0,229,160,0.3);border-top-color:var(--accent);"></div>
+            <div class="saving-text">Guardando en Google Sheets...</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-title">Resumen</div>
+          <div id="previewPanel" style="color:var(--muted);font-size:0.82rem;line-height:1.8;padding:16px 0;">
+            Activa la cámara y toma la foto para registrar tu asistencia.
+          </div>
+          <div id="previewReady" style="display:none;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
+              <tr><td style="padding:8px 0;color:var(--muted);width:40%">Tipo</td><td id="prev-tipo" style="padding:8px 0;font-family:'Syne',sans-serif;font-weight:700;"></td></tr>
+              <tr><td style="padding:8px 0;color:var(--muted)">Nombre</td><td id="prev-nombre" style="padding:8px 0;"></td></tr>
+              <tr><td style="padding:8px 0;color:var(--muted)">Cédula</td><td id="prev-cedula" style="padding:8px 0;"></td></tr>
+              <tr><td style="padding:8px 0;color:var(--muted)">Hora</td><td id="prev-hora" style="padding:8px 0;color:var(--accent);"></td></tr>
+              <tr><td style="padding:8px 0;color:var(--muted)">Fecha</td><td id="prev-fecha" style="padding:8px 0;"></td></tr>
+              <tr><td style="padding:8px 0;color:var(--muted)">Ubicación</td><td id="prev-coords" style="padding:8px 0;font-size:0.75rem;"></td></tr>
+            </table>
+          </div>
+          <button class="btn btn-primary" onclick="guardarRegistro()" id="btnGuardar">
+            ✅ Registrar Asistencia
+          </button>
+        </div>
+
+        <div class="card" style="margin-top:16px;">
+          <div class="card-title" style="font-size:0.9rem;">Últimos Registros Hoy</div>
+          <div id="todayList"><div style="color:var(--muted);font-size:0.8rem;">Sin registros hoy.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: HISTORIAL ── -->
+  <div class="tab-panel" id="tab-historial">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div class="card-title" style="margin:0">Mi Historial de Asistencia</div>
+        <button class="btn btn-secondary" onclick="cargarHistorial()" style="flex:0;white-space:nowrap;padding:8px 16px;font-size:0.8rem;">🔄 Actualizar</button>
+      </div>
+      <div id="historialLoading" style="display:none;text-align:center;padding:32px;color:var(--muted);">
+        <div class="spinner" style="margin:0 auto 12px;width:28px;height:28px;"></div>Cargando...
+      </div>
+      <div class="table-wrap" id="historialWrap">
+        <table>
+          <thead><tr><th>Foto</th><th>Tipo</th><th>Fecha</th><th>Hora</th><th>Ubicación</th></tr></thead>
+          <tbody id="historialBody">
+            <tr><td colspan="5"><div class="empty-state"><div class="emoji">📭</div><p>Presiona "Actualizar" para cargar tu historial.</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: REPORTE ── -->
+  <div class="tab-panel" id="tab-reporte">
+    <div id="reporteLoading" style="display:none;text-align:center;padding:48px;color:var(--muted);">
+      <div class="spinner" style="margin:0 auto 12px;width:28px;height:28px;"></div>Calculando horas...
+    </div>
+    <div id="reporteContainer">
+      <div class="empty-state"><div class="emoji">📊</div><p>Ve a "Mi Historial" primero para cargar tus registros.</p></div>
+    </div>
+  </div>
+
+</div><!-- .app -->
+</div><!-- #appScreen -->
+
+<!-- MODAL FOTO -->
+<div class="modal-overlay" id="photoModal" onclick="closeModal()">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <img class="modal-img" id="modalImg" src="" alt="">
+    <div class="modal-info" id="modalInfo"></div>
+    <button class="btn btn-secondary modal-close" onclick="closeModal()">Cerrar</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  ⚠️  REEMPLAZA ESTA URL CON LA TUYA DE APPS SCRIPT
+// ══════════════════════════════════════════════════════════════
+const API_URL = 'https://script.google.com/macros/s/AKfycbwzpZBe5VFgGFsphoZJcGCM8uJAsjfiKsgWvJOyOsdW5BQNsfSv_8m4qCDcA5zCOCVW/exec';
+// ══════════════════════════════════════════════════════════════
+
+let currentUser = null;
+let currentType = 'entrada';
+let currentLocation = null;
+let stream = null;
+let photoData = null;
+let misRegistros = [];
+
+// ─── CLOCK ────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clockTime').textContent =
+    now.toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('clockDate').textContent =
+    now.toLocaleDateString('es-CO', {weekday:'long',day:'numeric',month:'long'});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ─── LOGIN ────────────────────────────────────────────────────
+async function doLogin() {
+  const cedula = document.getElementById('loginCedula').value.trim();
+  if (!cedula) { showLoginError('Ingresa tu número de cédula.'); return; }
+
+  const btn = document.getElementById('btnLogin');
+  btn.disabled = true;
+  document.getElementById('loginBtnText').innerHTML =
+    '<div class="spinner"></div> Verificando...';
+  document.getElementById('loginError').classList.remove('show');
+
+  try {
+    const res  = await fetch(`${API_URL}?action=verificarCedula&cedula=${cedula}`);
+    const data = await res.json();
+
+    if (data.ok) {
+      currentUser = { cedula, nombre: data.nombre, cargo: data.cargo };
+      sessionStorage.setItem('checkin_user', JSON.stringify(currentUser));
+      showApp();
+    } else {
+      showLoginError(data.error || 'Cédula no autorizada.');
+    }
+  } catch(e) {
+    showLoginError('Error de conexión. Verifica la URL de la API en el código.');
+  }
+
+  btn.disabled = false;
+  document.getElementById('loginBtnText').textContent = 'Ingresar';
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('loginError');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+function showApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appScreen').classList.add('show');
+  document.getElementById('headerNombre').textContent = currentUser.nombre;
+  document.getElementById('headerCedula').textContent = `CC: ${currentUser.cedula}`;
+  document.getElementById('userAvatar').textContent = currentUser.nombre.charAt(0).toUpperCase();
+  // pre-fill nombre
+  updatePreview();
+  getLocation();
+}
+
+function logout() {
+  sessionStorage.removeItem('checkin_user');
+  currentUser = null; photoData = null;
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('appScreen').classList.remove('show');
+  document.getElementById('loginCedula').value = '';
+  document.getElementById('loginError').classList.remove('show');
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+}
+
+// Restaurar sesión
+const saved = sessionStorage.getItem('checkin_user');
+if (saved) { currentUser = JSON.parse(saved); showApp(); }
+
+// ─── LOCATION ─────────────────────────────────────────────────
+function getLocation() {
+  const badge = document.getElementById('locationBadge');
+  const txt   = document.getElementById('locationText');
+  if (!navigator.geolocation) {
+    badge.className = 'location-badge err';
+    txt.textContent = 'Geolocalización no disponible'; return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      currentLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy };
+      badge.className = 'location-badge ok';
+      txt.textContent = `${currentLocation.lat.toFixed(5)}, ${currentLocation.lng.toFixed(5)} (±${Math.round(currentLocation.acc)}m)`;
+      updatePreview();
+    },
+    err => {
+      badge.className = 'location-badge err';
+      txt.textContent = 'Ubicación no disponible';
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
+// ─── TABS ─────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'historial') cargarHistorial();
+  if (name === 'reporte')   renderReporte();
+}
+
+// ─── CHECK TYPE ───────────────────────────────────────────────
+function selectType(type) {
+  currentType = type;
+  document.getElementById('opt-entrada').classList.toggle('selected', type === 'entrada');
+  document.getElementById('opt-salida').classList.toggle('selected', type === 'salida');
+  updatePreview();
+}
+
+// ─── CAMERA ──────────────────────────────────────────────────
+async function startCamera() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+    const video = document.getElementById('videoStream');
+    video.srcObject = stream; video.style.display = 'block';
+    document.getElementById('cameraPlaceholder').style.display = 'none';
+    document.getElementById('capturedPhoto').style.display = 'none';
+    document.getElementById('btnSnap').disabled = false;
+    document.getElementById('btnStartCamera').style.display = 'none';
+    document.getElementById('btnRetake').style.display = 'none';
+    photoData = null; updatePreview();
+  } catch(e) { showToast('No se pudo acceder a la cámara', 'error'); }
+}
+
+function takePhoto() {
+  const video = document.getElementById('videoStream');
+  const canvas = document.getElementById('photoCanvas');
+  canvas.width = video.videoWidth || 640;
+  canvas.height = video.videoHeight || 480;
+  const ctx = canvas.getContext('2d');
+  ctx.save(); ctx.scale(-1,1);
+  ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+  ctx.restore();
+  const now = new Date();
+  const stamp = now.toLocaleTimeString('es-CO') + '  ' + now.toLocaleDateString('es-CO');
+  ctx.font = 'bold 16px monospace';
+  const w = ctx.measureText(stamp).width + 20;
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(8, canvas.height - 34, w, 26);
+  ctx.fillStyle = '#00e5a0';
+  ctx.fillText(stamp, 18, canvas.height - 14);
+
+  photoData = canvas.toDataURL('image/jpeg', 0.75); // comprimido para Sheets
+  const img = document.getElementById('capturedPhoto');
+  img.src = photoData; img.style.display = 'block';
+  document.getElementById('videoStream').style.display = 'none';
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  document.getElementById('btnSnap').disabled = true;
+  document.getElementById('btnRetake').style.display = 'inline-flex';
+  document.getElementById('btnStartCamera').style.display = 'inline-flex';
+  const ov = document.getElementById('successOverlay');
+  ov.classList.add('show'); setTimeout(() => ov.classList.remove('show'), 800);
+  updatePreview();
+}
+
+function retakePhoto() {
+  photoData = null;
+  document.getElementById('capturedPhoto').style.display = 'none';
+  document.getElementById('cameraPlaceholder').style.display = 'flex';
+  document.getElementById('btnRetake').style.display = 'none';
+  document.getElementById('btnStartCamera').style.display = 'inline-flex';
+  updatePreview();
+}
+
+// ─── PREVIEW ─────────────────────────────────────────────────
+function updatePreview() {
+  if (!currentUser) return;
+  const panel = document.getElementById('previewReady');
+  const blank = document.getElementById('previewPanel');
+  if (!photoData) { panel.style.display='none'; blank.style.display='block'; return; }
+  blank.style.display = 'none'; panel.style.display = 'block';
+  const now = new Date();
+  document.getElementById('prev-tipo').textContent  = currentType.toUpperCase();
+  document.getElementById('prev-tipo').style.color  = currentType === 'entrada' ? 'var(--accent)' : 'var(--accent2)';
+  document.getElementById('prev-nombre').textContent = currentUser.nombre;
+  document.getElementById('prev-cedula').textContent = currentUser.cedula;
+  document.getElementById('prev-hora').textContent   = now.toLocaleTimeString('es-CO');
+  document.getElementById('prev-fecha').textContent  = now.toLocaleDateString('es-CO');
+  document.getElementById('prev-coords').textContent = currentLocation
+    ? `${currentLocation.lat.toFixed(5)}, ${currentLocation.lng.toFixed(5)}`
+    : 'No disponible';
+}
+
+// ─── GUARDAR ─────────────────────────────────────────────────
+async function guardarRegistro() {
+  if (!photoData) { showToast('Toma una foto antes de registrar', 'error'); return; }
+  if (!currentUser) return;
+
+  const btn = document.getElementById('btnGuardar');
+  btn.disabled = true;
+  document.getElementById('savingOverlay').classList.add('show');
+
+  const now = new Date();
+  const payload = {
+    action: 'guardarRegistro',
+    tipo:      currentType,
+    cedula:    currentUser.cedula,
+    nombre:    currentUser.nombre,
+    fecha:     now.toISOString().split('T')[0],
+    hora:      now.toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit',second:'2-digit'}),
+    horaISO:   now.toISOString(),
+    lat:       currentLocation?.lat ?? null,
+    lng:       currentLocation?.lng ?? null,
+    precision: currentLocation?.acc ?? null,
+    foto:      photoData
+  };
+
+  try {
+    const res  = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+    const data = await res.json();
+
+    if (data.ok) {
+      showToast(`✅ ${currentType === 'entrada' ? 'Entrada' : 'Salida'} guardada en Google Sheets`, 'success');
+
+      // guardar también en cache local para today list
+      misRegistros.unshift({ ...payload, id: data.id, foto: photoData });
+      renderTodayList();
+
+      photoData = null;
+      document.getElementById('capturedPhoto').style.display = 'none';
+      document.getElementById('cameraPlaceholder').style.display = 'flex';
+      document.getElementById('btnRetake').style.display = 'none';
+      document.getElementById('btnStartCamera').style.display = 'inline-flex';
+      updatePreview();
+      getLocation();
+    } else {
+      showToast(data.error || 'Error al guardar', 'error');
+    }
+  } catch(e) {
+    showToast('Error de conexión con la API', 'error');
+  }
+
+  document.getElementById('savingOverlay').classList.remove('show');
+  btn.disabled = false;
+}
+
+// ─── TODAY LIST ──────────────────────────────────────────────
+function renderTodayList() {
+  const today = new Date().toISOString().split('T')[0];
+  const hoy   = misRegistros.filter(r => r.fecha === today).slice(0,5);
+  const el    = document.getElementById('todayList');
+  if (!hoy.length) { el.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;">Sin registros hoy.</div>'; return; }
+  el.innerHTML = hoy.map(r => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+      <img src="${r.foto}" style="width:32px;height:32px;border-radius:6px;object-fit:cover;">
+      <div style="flex:1;">
+        <div style="font-size:0.78rem;">${r.nombre}</div>
+      </div>
+      <span class="badge badge-${r.tipo}">${r.tipo}</span>
+      <span style="font-size:0.75rem;color:var(--accent);white-space:nowrap;">${r.hora}</span>
+    </div>
+  `).join('');
+}
+
+// ─── CARGAR HISTORIAL ─────────────────────────────────────────
+async function cargarHistorial() {
+  document.getElementById('historialLoading').style.display = 'block';
+  document.getElementById('historialWrap').style.display = 'none';
+  try {
+    const res  = await fetch(`${API_URL}?action=getRegistros&cedula=${currentUser.cedula}`);
+    const data = await res.json();
+    if (data.ok) {
+      misRegistros = data.registros;
+      renderHistorialTable();
+      renderReporte();
+      renderTodayList();
+    } else {
+      showToast(data.error, 'error');
+    }
+  } catch(e) { showToast('Error al cargar historial', 'error'); }
+  document.getElementById('historialLoading').style.display = 'none';
+  document.getElementById('historialWrap').style.display = 'block';
+}
+
+function renderHistorialTable() {
+  const tbody = document.getElementById('historialBody');
+  if (!misRegistros.length) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="emoji">📭</div><p>Sin registros aún.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = misRegistros.map((r, i) => `
+    <tr>
+      <td class="thumb-cell"><img src="${r.foto}" onclick="openModal(${i})" title="Ver foto"></td>
+      <td><span class="badge badge-${r.tipo.toLowerCase()}">${r.tipo}</span></td>
+      <td>${r.fecha}</td>
+      <td style="color:var(--accent);">${r.hora}</td>
+      <td style="font-size:0.72rem;color:var(--muted);">
+        ${r.lat ? `<a href="https://maps.google.com/?q=${r.lat},${r.lng}" target="_blank" style="color:var(--accent2);">Ver mapa ↗</a>` : '—'}
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ─── REPORTE ─────────────────────────────────────────────────
+function renderReporte() {
+  const container = document.getElementById('reporteContainer');
+  if (!misRegistros.length) {
+    container.innerHTML = '<div class="empty-state"><div class="emoji">📊</div><p>Carga tu historial primero.</p></div>';
+    return;
+  }
+
+  const dias = {};
+  misRegistros.forEach(r => {
+    const f = r.fecha;
+    if (!dias[f]) dias[f] = { entradas:[], salidas:[] };
+    const tipo = (r.tipo || '').toLowerCase();
+    if (tipo === 'entrada') dias[f].entradas.push(r.hora);
+    else                    dias[f].salidas.push(r.hora);
+  });
+
+  let totalMin = 0;
+  const rows = Object.keys(dias).sort().reverse().map(fecha => {
+    const d = dias[fecha];
+    const entrada = d.entradas[0] || '—';
+    const salida  = d.salidas[d.salidas.length-1] || '—';
+    let horasTxt = '—'; let mins = 0;
+    if (entrada !== '—' && salida !== '—') {
+      const e = new Date(`${fecha}T${entrada.length === 8 ? entrada : entrada+':00'}`);
+      const s = new Date(`${fecha}T${salida.length === 8 ? salida : salida+':00'}`);
+      mins = Math.max(0, Math.round((s - e) / 60000));
+      totalMin += mins;
+      horasTxt = `${Math.floor(mins/60)}h ${mins%60}m`;
+    }
+    return { fecha, entrada, salida, horasTxt, mins };
+  });
+
+  const totalH = Math.floor(totalMin/60);
+  const totalM = totalMin%60;
+  const pct    = Math.min(100, Math.round(totalMin / (rows.length * 8 * 60) * 100));
+
+  container.innerHTML = `
+    <div class="card">
+      <div style="display:flex;align-items:start;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div class="card-title" style="margin-bottom:4px;">${currentUser.nombre}</div>
+          <div style="font-size:0.78rem;color:var(--muted);">CC: ${currentUser.cedula} — ${currentUser.cargo || ''}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Total registrado</div>
+          <div style="font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:var(--accent);">${totalH}h ${totalM}m</div>
+          <div style="font-size:0.72rem;color:var(--muted);">${rows.length} días</div>
+        </div>
+      </div>
+      <div class="hours-bar" style="margin-bottom:24px;"><div class="hours-fill" style="width:${pct}%"></div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Entrada</th><th>Salida</th><th>Horas</th></tr></thead>
+          <tbody>
+            ${rows.map(r => `
+              <tr>
+                <td>${r.fecha}</td>
+                <td style="color:var(--accent);">${r.entrada}</td>
+                <td style="color:var(--accent2);">${r.salida}</td>
+                <td>${r.horasTxt}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// ─── MODAL ────────────────────────────────────────────────────
+function openModal(i) {
+  const r = misRegistros[i];
+  document.getElementById('modalImg').src = r.foto;
+  document.getElementById('modalInfo').innerHTML = `
+    <strong>Tipo:</strong> ${r.tipo}<br>
+    <strong>Fecha:</strong> ${r.fecha}<br>
+    <strong>Hora:</strong> ${r.hora}<br>
+    <strong>Lat/Lng:</strong> ${r.lat ? `${r.lat}, ${r.lng}` : 'No disponible'}<br>
+    ${r.lat ? `<a href="https://maps.google.com/?q=${r.lat},${r.lng}" target="_blank" style="color:var(--accent);">Ver en Google Maps ↗</a>` : ''}
+  `;
+  document.getElementById('photoModal').classList.add('open');
+}
+function closeModal() { document.getElementById('photoModal').classList.remove('open'); }
+
+// ─── TOAST ────────────────────────────────────────────────────
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3800);
+}
+</script>
+</body>
+</html>
